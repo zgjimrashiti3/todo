@@ -1,41 +1,11 @@
 import { useRef, useState } from 'react'
-import { ClockIcon, TrashIcon } from './icons'
+import Checkbox from './Checkbox'
+import { ChecklistIcon, ClockIcon, RepeatIcon, TrashIcon } from './icons'
+import { PRIORITIES } from '../lib/tasks'
+import { describeRepeat } from '../lib/recurrence'
 import { formatDateHeading, formatTime } from '../lib/dates'
 
 const REVEAL = 88 // px of the delete action revealed by a swipe
-
-function Checkbox({ done, onToggle, title }) {
-  return (
-    <button
-      type="button"
-      role="checkbox"
-      aria-checked={done}
-      aria-label={`${done ? 'Mark as not done' : 'Mark as done'}: ${title}`}
-      onClick={(e) => {
-        e.stopPropagation()
-        onToggle()
-      }}
-      className="-m-2 flex size-11 shrink-0 items-center justify-center"
-    >
-      <span
-        className={`flex size-6 items-center justify-center rounded-lg border-2 transition-all duration-200 ${
-          done ? 'scale-100 border-primary bg-primary' : 'border-[#cfc8d8] bg-white'
-        }`}
-      >
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="white" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
-          <path
-            d="M5 12.5l4.5 4.5L19 7.5"
-            style={{
-              strokeDasharray: 24,
-              strokeDashoffset: done ? 0 : 24,
-              transition: 'stroke-dashoffset 0.25s ease-out',
-            }}
-          />
-        </svg>
-      </span>
-    </button>
-  )
-}
 
 export default function TaskItem({ task, overdue = false, todayISO, leaving = false, onToggle, onEdit, onDelete }) {
   const [dx, setDx] = useState(0)
@@ -44,6 +14,11 @@ export default function TaskItem({ task, overdue = false, todayISO, leaving = fa
 
   const showDate = task.date && task.date !== todayISO
   const rowBg = overdue ? 'bg-peach' : 'bg-canvas'
+  const priority = PRIORITIES.find((p) => p.id === task.priority)
+  const subDone = task.subtasks.filter((x) => x.done).length
+  const dateText = showDate ? formatDateHeading(task.date, todayISO) : null
+  const recurring = task.repeat.type !== 'none'
+  const hasMeta = (!overdue && dateText) || task.subtasks.length > 0 || recurring || task.tags.length > 0
 
   const onPointerDown = (e) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return
@@ -121,25 +96,50 @@ export default function TaskItem({ task, overdue = false, todayISO, leaving = fa
             dragging ? '' : 'transition-transform duration-200 ease-out'
           }`}
         >
-          <Checkbox done={task.done} onToggle={onToggle} title={task.title} />
+          <Checkbox
+            done={task.done}
+            onToggle={onToggle}
+            label={`${task.done ? 'Mark as not done' : 'Mark as done'}: ${task.title}`}
+          />
           <div className="min-w-0 flex-1">
             {overdue && (
               <div className="mb-0.5 flex items-center gap-2">
-                <span className="rounded-md bg-danger/10 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-danger">
+                <span className="rounded-md bg-danger/10 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-danger-text">
                   Overdue
                 </span>
                 {showDate && <span className="text-xs text-muted">{formatDateHeading(task.date, todayISO)}</span>}
               </div>
             )}
             <p
-              className={`break-words text-[17px] leading-snug font-semibold tracking-tight transition-colors duration-200 ${
+              className={`flex items-start gap-2 break-words text-[17px] leading-snug font-semibold tracking-tight transition-colors duration-200 ${
                 task.done ? 'text-muted line-through decoration-muted/70' : 'text-ink'
               }`}
             >
-              {task.title}
+              {priority?.dot && (
+                <span role="img" aria-label={`${priority.label} priority`} className={`mt-[7px] size-2.5 shrink-0 rounded-full ${priority.dot}`} />
+              )}
+              <span className="min-w-0">{task.title}</span>
             </p>
-            {!overdue && showDate && (
-              <p className="mt-0.5 text-xs text-muted">{formatDateHeading(task.date, todayISO)}</p>
+            {hasMeta && (
+              <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted">
+                {!overdue && dateText && <span>{dateText}</span>}
+                {task.subtasks.length > 0 && (
+                  <span className="flex items-center gap-1" aria-label={`${subDone} of ${task.subtasks.length} subtasks done`}>
+                    <ChecklistIcon />
+                    {subDone}/{task.subtasks.length}
+                  </span>
+                )}
+                {recurring && (
+                  <span role="img" aria-label={describeRepeat(task.repeat)} title={describeRepeat(task.repeat)}>
+                    <RepeatIcon />
+                  </span>
+                )}
+                {task.tags.map((t) => (
+                  <span key={t} className="rounded-md bg-primary-soft px-1.5 py-0.5 text-[11px] font-semibold text-accent">
+                    #{t}
+                  </span>
+                ))}
+              </div>
             )}
           </div>
           {task.time && (

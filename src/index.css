@@ -1,17 +1,48 @@
 @import 'tailwindcss';
 
-@theme {
+/* Light palette. `static` keeps every token as a CSS variable so the dark theme can override it. */
+@theme static {
   --color-primary: #3b1fa3;
   --color-primary-dark: #2d1782;
   --color-primary-soft: #ece8fa;
+  --color-accent: #3b1fa3; /* the primary colour when used as text / thin fills */
   --color-canvas: #fdf8f5;
+  --color-surface: #ffffff; /* inputs, selected segments, unchecked boxes */
   --color-peach: #fde8df;
   --color-peach-line: #f6cfc0;
   --color-danger: #d92d20;
+  --color-danger-text: #d92d20;
   --color-ink: #1a1233;
-  --color-muted: #8b8698;
+  --color-muted: #756f87;
   --color-line: #ebe5e1;
+  --color-tint: rgb(0 0 0 / 0.05);
+  --color-tint-strong: rgb(0 0 0 / 0.1);
+  --color-handle: rgb(0 0 0 / 0.15);
+  --color-check: #cfc8d8;
+  --color-toast: #1a1233;
+  --color-p-high: #e5484d;
+  --color-p-medium: #f5a524;
+  --color-p-low: #3e8ef7;
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Dark palette: deep indigo-tinted surfaces, same primary accent. */
+:root[data-theme='dark'] {
+  --color-primary-soft: #2b2458;
+  --color-accent: #b9aaff;
+  --color-canvas: #14112b;
+  --color-surface: #1f1b3d;
+  --color-peach: #3a2230;
+  --color-peach-line: #55303d;
+  --color-danger-text: #ff8f85;
+  --color-ink: #efecfa;
+  --color-muted: #a29db9;
+  --color-line: #2c2750;
+  --color-tint: rgb(255 255 255 / 0.07);
+  --color-tint-strong: rgb(255 255 255 / 0.13);
+  --color-handle: rgb(255 255 255 / 0.25);
+  --color-check: #5b5483;
+  --color-toast: #2f2961;
 }
 
 html,
@@ -41,6 +72,20 @@ button {
 button {
   cursor: pointer;
   touch-action: manipulation;
+}
+
+/* Visible keyboard focus on everything interactive (inputs already get a border highlight). */
+button:focus-visible,
+[role='button']:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 @keyframes fade-up {

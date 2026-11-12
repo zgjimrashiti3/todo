@@ -24,7 +24,7 @@ export default function TaskList({ view, todayISO, leaving, onToggle, onEdit, on
       {view.groups.map((g) => (
         <section key={g.key}>
           {g.label && (
-            <h3 className="mb-1 text-sm font-bold tracking-tight text-primary">{g.label}</h3>
+            <h3 className="mb-1 text-sm font-bold tracking-tight text-accent">{g.label}</h3>
           )}
           <ul className="divide-y divide-line">{g.tasks.map((t) => item(t))}</ul>
         </section>

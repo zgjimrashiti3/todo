@@ -1,5 +1,5 @@
 /* Offline support: precache the app shell, then cache-as-you-go. */
-const CACHE = 'my-tasks-v1'
+const CACHE = 'my-tasks-v2'
 const SHELL = [
   '/',
   '/manifest.webmanifest',
