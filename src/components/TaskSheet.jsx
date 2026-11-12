@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { addDays, fromISO, isValidDate, toISO } from '../lib/dates'
 import { MAX_TITLE, PRIORITIES, validateTitle } from '../lib/tasks'
-import { NO_REPEAT, normalizeRepeat } from '../lib/recurrence'
+import { NO_REPEAT, REPEATS, normalizeRepeat } from '../lib/recurrence'
 import { normalizeTags } from '../lib/tags'
 import BottomSheet from './BottomSheet'
 import Segmented from './Segmented'
@@ -14,7 +14,6 @@ const MODES = [
   { id: 'today', label: 'Today' },
   { id: 'tomorrow', label: 'Tomorrow' },
   { id: 'pick', label: 'Pick a date' },
-  { id: 'none', label: 'No date' },
 ]
 
 function initialMode(task, defaultMode, todayISO) {
@@ -31,7 +30,7 @@ export default function TaskSheet({ task, defaultMode = 'today', allTags, onSave
   const [title, setTitle] = useState(task?.title ?? '')
   const [mode, setMode] = useState(() => initialMode(task, defaultMode, todayISO))
   const [picked, setPicked] = useState(task?.date ?? todayISO)
-  const [time, setTime] = useState(task ? (task.time ?? '') : '09:00')
+  const [time, setTime] = useState(task?.time ?? '')
   const [repeatType, setRepeatType] = useState(task?.repeat.type ?? 'none')
   const [weekdays, setWeekdays] = useState(task?.repeat.days ?? [])
   const [priority, setPriority] = useState(task?.priority ?? 'none')
@@ -41,12 +40,32 @@ export default function TaskSheet({ task, defaultMode = 'today', allTags, onSave
   const [subDraft, setSubDraft] = useState('')
   const [error, setError] = useState(null)
   const [confirming, setConfirming] = useState(false)
+  const [open, setOpen] = useState(null) // which optional field is expanded
 
   const dateFor = () => (mode === 'today' ? todayISO : mode === 'tomorrow' ? addDays(todayISO, 1) : mode === 'pick' ? picked : null)
   const date = dateFor()
   const dateObj = isValidDate(date) ? fromISO(date) : fromISO(todayISO)
   // Keep a monthly task on its original day if the date didn't change (avoids drift after short months).
   const monthDay = task?.repeat.type === 'monthly' && task.date === date ? task.repeat.day : dateObj.getDate()
+
+  const draftTag = normalizeTags([...tags, tagDraft])
+  const subCount = subtasks.length + (subDraft.trim() ? 1 : 0)
+  const hasDate = mode !== 'none'
+  const chips = [
+    hasDate && { id: 'time', label: 'Time', value: time || null },
+    hasDate && {
+      id: 'repeat',
+      label: 'Repeat',
+      value: repeatType !== 'none' ? REPEATS.find((r) => r.id === repeatType)?.label : null,
+    },
+    { id: 'priority', label: 'Priority', value: priority !== 'none' ? PRIORITIES.find((p) => p.id === priority)?.label : null },
+    {
+      id: 'tags',
+      label: 'Tags',
+      value: draftTag.length ? `#${draftTag[0]}${draftTag.length > 1 ? ` +${draftTag.length - 1}` : ''}` : null,
+    },
+    { id: 'subtasks', label: 'Subtasks', value: subCount ? `${subCount} subtask${subCount > 1 ? 's' : ''}` : null },
+  ].filter(Boolean)
 
   const chooseRepeat = (type) => {
     setRepeatType(type)
@@ -75,7 +94,7 @@ export default function TaskSheet({ task, defaultMode = 'today', allTags, onSave
     <BottomSheet label={task ? 'Edit task' : 'New task'} title={task ? 'Edit task' : 'New task'} onClose={onClose}>
       {(close) => (
         <form onSubmit={(e) => submit(e, close)} noValidate>
-          <label className="mb-1.5 block text-sm font-semibold text-muted" htmlFor="task-name">
+          <label className="sr-only" htmlFor="task-name">
             Task name
           </label>
           <input
@@ -99,6 +118,8 @@ export default function TaskSheet({ task, defaultMode = 'today', allTags, onSave
 
           <Segmented
             label="Date"
+            hideLabel
+            className="mt-3"
             options={MODES}
             value={mode}
             onChange={(m) => {
@@ -113,56 +134,86 @@ export default function TaskSheet({ task, defaultMode = 'today', allTags, onSave
               aria-label="Pick a date"
               value={picked}
               onChange={(e) => setPicked(e.target.value)}
-              className="animate-fade-up mt-3 h-12 w-full rounded-xl border-2 border-line bg-surface px-4 text-base font-medium outline-none focus:border-primary"
+              className="animate-fade-up mt-2 h-12 w-full rounded-xl border-2 border-line bg-surface px-4 text-base font-medium outline-none focus:border-primary"
             />
           )}
 
-          {mode !== 'none' && (
-            <>
-              <label className="mt-5 mb-1.5 block text-sm font-semibold text-muted" htmlFor="task-time">
-                Time <span className="font-normal">(optional)</span>
-              </label>
-              <div className="flex gap-2">
-                <input
-                  id="task-time"
-                  type="time"
-                  value={time}
-                  onChange={(e) => setTime(e.target.value)}
-                  className="h-12 min-w-0 flex-1 rounded-xl border-2 border-line bg-surface px-4 text-base font-medium outline-none focus:border-primary"
+          <div role="group" aria-label="Optional details" className="mt-3 flex flex-wrap gap-2">
+            {chips.map((c) => {
+              const active = c.value != null
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  aria-expanded={open === c.id}
+                  onClick={() => setOpen(open === c.id ? null : c.id)}
+                  className={`min-h-11 rounded-full px-3.5 text-[14px] font-semibold transition-colors duration-200 ${
+                    active ? 'bg-primary-soft text-accent' : 'border border-line text-muted'
+                  } ${open === c.id ? 'ring-2 ring-primary' : ''}`}
+                >
+                  {active ? c.value : `+ ${c.label}`}
+                </button>
+              )
+            })}
+          </div>
+
+          {open && (
+            <div className="animate-fade-up mt-3">
+              {open === 'time' && (
+                <div className="flex gap-2">
+                  <input
+                    type="time"
+                    aria-label="Time"
+                    value={time}
+                    onChange={(e) => setTime(e.target.value)}
+                    className="h-12 min-w-0 flex-1 rounded-xl border-2 border-line bg-surface px-4 text-base font-medium outline-none focus:border-primary"
+                  />
+                  {time && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTime('')
+                        setOpen(null)
+                      }}
+                      className="min-h-12 rounded-xl bg-tint px-4 text-sm font-semibold text-muted"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              )}
+              {open === 'repeat' && (
+                <RepeatPicker
+                  compact
+                  type={repeatType}
+                  weekdays={weekdays}
+                  monthDay={monthDay}
+                  onType={chooseRepeat}
+                  onWeekdays={setWeekdays}
                 />
-                {time && (
-                  <button
-                    type="button"
-                    onClick={() => setTime('')}
-                    className="min-h-12 rounded-xl bg-tint px-4 text-sm font-semibold text-muted"
-                  >
-                    No time
-                  </button>
-                )}
-              </div>
-              <RepeatPicker
-                type={repeatType}
-                weekdays={weekdays}
-                monthDay={monthDay}
-                onType={chooseRepeat}
-                onWeekdays={setWeekdays}
-              />
-            </>
+              )}
+              {open === 'priority' && (
+                <Segmented
+                  label="Priority"
+                  hideLabel
+                  className=""
+                  options={PRIORITIES.map((p) => ({ id: p.id, label: p.label, dot: p.dot }))}
+                  value={priority}
+                  onChange={setPriority}
+                />
+              )}
+              {open === 'tags' && (
+                <TagInput compact tags={tags} onChange={setTags} draft={tagDraft} onDraft={setTagDraft} suggestions={allTags} />
+              )}
+              {open === 'subtasks' && (
+                <SubtaskEditor compact items={subtasks} onChange={setSubtasks} draft={subDraft} onDraft={setSubDraft} />
+              )}
+            </div>
           )}
-
-          <Segmented
-            label="Priority"
-            options={PRIORITIES.map((p) => ({ id: p.id, label: p.label, dot: p.dot }))}
-            value={priority}
-            onChange={setPriority}
-          />
-
-          <TagInput tags={tags} onChange={setTags} draft={tagDraft} onDraft={setTagDraft} suggestions={allTags} />
-          <SubtaskEditor items={subtasks} onChange={setSubtasks} draft={subDraft} onDraft={setSubDraft} />
 
           <button
             type="submit"
-            className="mt-6 h-14 w-full rounded-2xl bg-primary text-[17px] font-bold text-white shadow-lg shadow-primary/25 transition-transform active:scale-[0.98] active:bg-primary-dark"
+            className="mt-4 h-14 w-full rounded-2xl bg-primary text-[17px] font-bold text-white shadow-lg shadow-primary/25 transition-transform active:scale-[0.98] active:bg-primary-dark"
           >
             Save task
           </button>

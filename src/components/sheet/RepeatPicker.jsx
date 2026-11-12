@@ -2,7 +2,7 @@ import Segmented from '../Segmented'
 import { describeRepeat, REPEATS, WEEKDAYS } from '../../lib/recurrence'
 
 /** Repeat type + weekday chooser. `weekdays` always keeps at least one day. */
-export default function RepeatPicker({ type, weekdays, monthDay, onType, onWeekdays }) {
+export default function RepeatPicker({ type, weekdays, monthDay, onType, onWeekdays, compact = false }) {
   const toggleDay = (day) => {
     if (weekdays.includes(day)) {
       if (weekdays.length > 1) onWeekdays(weekdays.filter((d) => d !== day))
@@ -14,7 +14,7 @@ export default function RepeatPicker({ type, weekdays, monthDay, onType, onWeekd
 
   return (
     <>
-      <Segmented label="Repeat" options={REPEATS} value={type} onChange={onType} />
+      <Segmented label="Repeat" options={REPEATS} value={type} onChange={onType} className={compact ? '' : 'mt-5'} hideLabel={compact} />
       {type === 'weekly' && (
         <div role="group" aria-label="Repeat on" className="animate-fade-up mt-2 grid grid-cols-7 gap-1">
           {WEEKDAYS.map((w) => {

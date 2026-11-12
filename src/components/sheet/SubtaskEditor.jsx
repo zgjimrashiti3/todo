@@ -5,7 +5,7 @@ import { MAX_SUBTASKS, MAX_TITLE, newId } from '../../lib/tasks'
 export const makeSubtask = (title) => ({ id: newId(), title: title.trim().slice(0, MAX_TITLE), done: false })
 
 /** Checklist editor: tick, add and remove subtasks. */
-export default function SubtaskEditor({ items, onChange, draft, onDraft }) {
+export default function SubtaskEditor({ items, onChange, draft, onDraft, compact = false }) {
   const add = () => {
     if (!draft.trim() || items.length >= MAX_SUBTASKS) return
     onChange([...items, makeSubtask(draft)])
@@ -15,7 +15,7 @@ export default function SubtaskEditor({ items, onChange, draft, onDraft }) {
 
   return (
     <>
-      <label className="mt-5 mb-1.5 block text-sm font-semibold text-muted" htmlFor="task-subtask">
+      <label className={compact ? 'sr-only' : 'mt-5 mb-1.5 block text-sm font-semibold text-muted'} htmlFor="task-subtask">
         Subtasks {items.length > 0 && <span className="font-normal">({done}/{items.length})</span>}
       </label>
       {items.length > 0 && (

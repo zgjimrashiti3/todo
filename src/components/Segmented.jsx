@@ -1,8 +1,8 @@
 /** Labelled segmented radio control. options: [{ id, label, dot? }] */
-export default function Segmented({ label, options, value, onChange, className = 'mt-5' }) {
+export default function Segmented({ label, options, value, onChange, className = 'mt-5', hideLabel = false }) {
   return (
     <div className={className}>
-      <div className="mb-1.5 text-sm font-semibold text-muted">{label}</div>
+      <div className={hideLabel ? 'sr-only' : 'mb-1.5 text-sm font-semibold text-muted'}>{label}</div>
       <div
         role="radiogroup"
         aria-label={label}

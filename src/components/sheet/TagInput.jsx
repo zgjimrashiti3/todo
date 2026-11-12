@@ -2,7 +2,7 @@ import { CloseIcon } from '../icons'
 import { MAX_TAG, MAX_TAGS, normalizeTag, normalizeTags } from '../../lib/tags'
 
 /** Free-text tags shown as chips, with one-tap reuse of tags from other tasks. */
-export default function TagInput({ tags, onChange, draft, onDraft, suggestions }) {
+export default function TagInput({ tags, onChange, draft, onDraft, suggestions, compact = false }) {
   const add = (raw) => {
     onChange(normalizeTags([...tags, raw]))
     onDraft('')
@@ -12,7 +12,7 @@ export default function TagInput({ tags, onChange, draft, onDraft, suggestions }
 
   return (
     <>
-      <label className="mt-5 mb-1.5 block text-sm font-semibold text-muted" htmlFor="task-tag">
+      <label className={compact ? 'sr-only' : 'mt-5 mb-1.5 block text-sm font-semibold text-muted'} htmlFor="task-tag">
         Tags <span className="font-normal">(optional)</span>
       </label>
       {tags.length > 0 && (
